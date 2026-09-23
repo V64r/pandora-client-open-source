@@ -1,0 +1,350 @@
+[15:03:05] Session started
+[15:03:05] [MAPPER] Starting class lookup engine (JVMTI)...
+[15:03:05] [MAPPER] JVMTI connected. Mapping base utilities...
+[15:03:05] [MAPPER] Window title: Lunar Client 1.8.9 (v2.22.35-2637)
+[15:03:05] [MAPPER] Lunar Client detected! Version: 1.8.9
+[15:03:05] [MAPPER] Loading Lunar 1.8.9 classes...
+[15:03:05] [MAPPER] Lunar 1.8.9 classes loaded.
+[15:03:05] 
+[15:03:05] ============================================================
+[15:03:05]            DETAILED CLASS MAPPING REPORT
+[15:03:05] ============================================================
+[15:03:05]  --- CLASSES LOADED SUCCESSFULLY ---
+[15:03:05] [OK]    List                                     -> java/util/List (PREPARED+INIT)
+[15:03:05] [OK]    Enum                                     -> java/lang/Enum (PREPARED+INIT)
+[15:03:05] [OK]    BlockPos                                 -> net/minecraft/util/BlockPos (PREPARED+INIT)
+[15:03:05] [OK]    Minecraft                                -> net/minecraft/client/Minecraft (PREPARED+INIT)
+[15:03:05] [OK]    GameSettings                             -> net/minecraft/client/settings/GameSettings (PREPARED+INIT)
+[15:03:05] [OK]    KeyBinding                               -> net/minecraft/client/settings/KeyBinding (PREPARED+INIT)
+[15:03:05] [OK]    Vec3                                     -> net/minecraft/util/Vec3 (PREPARED+INIT)
+[15:03:05] [OK]    Timer                                    -> net/minecraft/util/Timer (PREPARED+INIT)
+[15:03:05] [OK]    WorldClient                              -> net/minecraft/client/multiplayer/WorldClient (PREPARED+INIT)
+[15:03:05] [OK]    RenderManager                            -> net/minecraft/client/renderer/entity/RenderManager (PREPARED+INIT)
+[15:03:05] [OK]    GuiScreen                                -> net/minecraft/client/gui/GuiScreen (PREPARED+INIT)
+[15:03:05] [OK]    RenderItem                               -> net/minecraft/client/renderer/entity/RenderItem (PREPARED+INIT)
+[15:03:05] [OK]    Entity                                   -> net/minecraft/entity/Entity (PREPARED+INIT)
+[15:03:05] [OK]    EntityPlayerXP                           -> net/minecraft/client/entity/EntityPlayerSP (PREPARED+INIT)
+[15:03:05] [OK]    EntityPlayer                             -> net/minecraft/entity/player/EntityPlayer (PREPARED+INIT)
+[15:03:05] [OK]    AxisAlignedBB                            -> net/minecraft/util/AxisAlignedBB (PREPARED+INIT)
+[15:03:05] [OK]    ItemStack                                -> net/minecraft/item/ItemStack (PREPARED+INIT)
+[15:03:05] [OK]    Item                                     -> net/minecraft/item/Item (PREPARED+INIT)
+[15:03:05] [OK]    IBlockState                              -> net/minecraft/block/state/IBlockState (PREPARED)
+[15:03:05] [OK]    InventoryPlayer                          -> net/minecraft/entity/player/InventoryPlayer (PREPARED+INIT)
+[15:03:05] [OK]    EntityRenderer                           -> net/minecraft/client/renderer/EntityRenderer (PREPARED+INIT)
+[15:03:05] [OK]    ItemPotion                               -> net/minecraft/item/ItemPotion (PREPARED+INIT)
+[15:03:05] [OK]    EntityLivingBase                         -> net/minecraft/entity/EntityLivingBase (PREPARED+INIT)
+[15:03:05] [OK]    Block                                    -> net/minecraft/block/Block (PREPARED+INIT)
+[15:03:05] [OK]    ItemBlock                                -> net/minecraft/item/ItemBlock (PREPARED+INIT)
+[15:03:05] [OK]    ItemSword                                -> net/minecraft/item/ItemSword (PREPARED+INIT)
+[15:03:05] [OK]    ItemBow                                  -> net/minecraft/item/ItemBow (PREPARED+INIT)
+[15:03:05] [OK]    Potion                                   -> net/minecraft/potion/Potion (PREPARED+INIT)
+[15:03:05] [OK]    PotionEffect                             -> net/minecraft/potion/PotionEffect (PREPARED+INIT)
+[15:03:05] [OK]    RenderPlayer                             -> net/minecraft/client/renderer/entity/RenderPlayer (PREPARED+INIT)
+[15:03:05] [OK]    RendererLivingEntity                     -> net/minecraft/client/renderer/entity/RendererLivingEntity (PREPARED+INIT)
+[15:03:05] [OK]    FontRenderer                             -> net/minecraft/client/gui/FontRenderer (PREPARED+INIT)
+[15:03:05] [OK]    NetHandlerPlayClient                     -> net/minecraft/client/network/NetHandlerPlayClient (PREPARED+INIT)
+[15:03:05] [OK]    ScaledResolution                         -> net/minecraft/client/gui/ScaledResolution (PREPARED+INIT)
+[15:03:05] [OK]    NetworkManager                           -> net/minecraft/network/NetworkManager (PREPARED+INIT)
+[15:03:05] [OK]    GuiContainer                             -> net/minecraft/client/gui/inventory/GuiContainer (PREPARED)
+[15:03:05]  --- CLASSES NOT FOUND ---
+[15:03:05]  --- CLASSES NOT READY (status=0) ---
+[15:03:05]  --- SUMMARY ---
+[15:03:05] Total classes:          36
+[15:03:05] Loaded successfully:    36
+[15:03:05] Not found:              0
+[15:03:05] ============================================================
+[15:03:05] [MAPPER] Initialization completed.
+[15:03:05] [LOGIC]  Core classes verified
+[15:03:05] JNIHook: initialization result=0
+[15:03:05] JNIHook: Nametags attachment=0 original=0000000070B64410 ready=1
+[15:04:30] [MAPPER] Lazy-loaded class: PlayerControllerMP -> net/minecraft/client/multiplayer/PlayerControllerMP
+[15:04:31] [MAPPER] Lazy-loaded class: Packet -> net/minecraft/network/Packet
+[15:04:31] [MAPPER] Lazy-loaded class: C16PacketClientStatus -> net/minecraft/network/play/client/C16PacketClientStatus
+[15:04:31] [MAPPER] Lazy-loaded class: C0DPacketCloseWindow -> net/minecraft/network/play/client/C0DPacketCloseWindow
+[15:04:31] [MAPPER] Lazy-loaded class: C08PacketPlayerBlockPlacement -> net/minecraft/network/play/client/C08PacketPlayerBlockPlacement
+[15:04:31] [MAPPER] Lazy-loaded class: GuiChest -> net/minecraft/client/gui/inventory/GuiChest
+[15:04:31] Outline: attached 3 model hooks
+[15:04:31] [MAPPER] Lazy-loaded class: ActiveRenderInfo -> net/minecraft/client/renderer/ActiveRenderInfo
+[15:04:31] [MAPPER] Lazy-loaded class: MovingObjectPosition -> net/minecraft/util/MovingObjectPosition
+[15:04:31] [MAPPER] Lazy-loaded class: MovingObjectPosition_MovingObjectType -> net/minecraft/util/MovingObjectPosition$MovingObjectType
+[15:06:23] Refill started on game thread=8336
+[15:06:23] [MAPPER] Lazy-loaded class: C16PacketClientStatus$EnumState -> net/minecraft/network/play/client/C16PacketClientStatus$EnumState
+[15:06:23] [MAPPER] Lazy-loaded class: GuiInventory -> net/minecraft/client/gui/inventory/GuiInventory
+[15:06:23] Refill: moving slot 9 (attempt 1)
+[15:06:23] Refill: moving slot 10 (attempt 2)
+[15:06:42] Refill started on game thread=8336
+[15:06:42] Refill: moving slot 11 (attempt 1)
+[15:06:42] Refill: moving slot 12 (attempt 2)
+[15:06:58] Refill started on game thread=8336
+[15:06:58] Refill: moving slot 13 (attempt 1)
+[15:06:58] Refill: moving slot 14 (attempt 2)
+[15:06:58] Refill: moving slot 15 (attempt 3)
+[15:06:58] Refill: moving slot 16 (attempt 4)
+[15:07:45] Refill started on game thread=8336
+[15:07:46] Refill: moving slot 9 (attempt 1)
+[15:07:46] Refill: moving slot 10 (attempt 2)
+[15:08:00] Refill started on game thread=8336
+[15:08:00] Refill: moving slot 11 (attempt 1)
+[15:08:00] Refill: moving slot 12 (attempt 2)
+[15:08:00] Refill: moving slot 13 (attempt 3)
+[15:08:09] Refill started on game thread=8336
+[15:08:09] Refill: moving slot 14 (attempt 1)
+[15:08:09] Refill: moving slot 15 (attempt 2)
+[15:08:09] Refill: moving slot 16 (attempt 3)
+[15:08:22] Refill started on game thread=8336
+[15:08:22] Refill: moving slot 18 (attempt 1)
+[15:08:22] Refill: moving slot 19 (attempt 2)
+[15:08:22] Refill: moving slot 20 (attempt 3)
+[15:08:22] Refill: moving slot 21 (attempt 4)
+[15:08:22] Refill: moving slot 22 (attempt 5)
+[15:08:31] Refill started on game thread=8336
+[15:08:31] Refill: moving slot 23 (attempt 1)
+[15:08:31] Refill: moving slot 24 (attempt 2)
+[15:08:43] Refill started on game thread=8336
+[15:08:43] Refill: moving slot 17 (attempt 1)
+[15:08:43] Refill: moving slot 25 (attempt 2)
+[15:08:43] Refill: moving slot 27 (attempt 3)
+[15:08:43] Refill: moving slot 28 (attempt 4)
+[15:08:45] Refill started on game thread=8336
+[15:08:45] Refill: moving slot 29 (attempt 1)
+[15:08:56] Refill started on game thread=8336
+[15:08:56] Refill: moving slot 30 (attempt 1)
+[15:09:05] Refill started on game thread=8336
+[15:09:05] Refill: moving slot 31 (attempt 1)
+[15:09:05] Refill: moving slot 32 (attempt 2)
+[15:09:05] Refill: moving slot 33 (attempt 3)
+[15:09:22] Refill started on game thread=8336
+[15:09:22] Refill: moving slot 34 (attempt 1)
+[15:14:25] Refill started on game thread=8336
+[15:14:25] Refill: moving slot 9 (attempt 1)
+[15:14:25] Refill: moving slot 10 (attempt 2)
+[15:14:44] Refill started on game thread=8336
+[15:14:44] Refill: moving slot 11 (attempt 1)
+[15:14:49] Refill started on game thread=8336
+[15:14:49] Refill: moving slot 12 (attempt 1)
+[15:14:53] Refill started on game thread=8336
+[15:14:53] Refill: moving slot 13 (attempt 1)
+[15:15:05] Refill started on game thread=8336
+[15:15:05] Refill: moving slot 14 (attempt 1)
+[15:15:06] Refill: moving slot 15 (attempt 2)
+[15:15:06] Refill: moving slot 16 (attempt 3)
+[15:15:20] Refill started on game thread=8336
+[15:15:21] Refill: moving slot 18 (attempt 1)
+[15:15:21] Refill: moving slot 19 (attempt 2)
+[15:15:30] Refill started on game thread=8336
+[15:15:30] Refill: moving slot 20 (attempt 1)
+[15:15:30] Refill: moving slot 21 (attempt 2)
+[15:15:33] Refill started on game thread=8336
+[15:15:33] Refill: moving slot 22 (attempt 1)
+[15:16:39] Refill started on game thread=8336
+[15:16:39] Refill: moving slot 9 (attempt 1)
+[15:16:39] Refill: moving slot 10 (attempt 2)
+[15:17:15] Refill started on game thread=8336
+[15:17:15] Refill: moving slot 11 (attempt 1)
+[15:17:15] Refill: moving slot 12 (attempt 2)
+[15:17:15] Refill: moving slot 13 (attempt 3)
+[15:17:48] Refill started on game thread=8336
+[15:17:48] Refill: moving slot 9 (attempt 1)
+[15:17:48] Refill: moving slot 10 (attempt 2)
+[15:18:14] Refill started on game thread=8336
+[15:18:14] Refill: moving slot 11 (attempt 1)
+[15:18:14] Refill: moving slot 12 (attempt 2)
+[15:18:14] Refill: moving slot 13 (attempt 3)
+[15:18:27] Refill started on game thread=8336
+[15:18:27] Refill: moving slot 14 (attempt 1)
+[15:18:27] Refill: moving slot 15 (attempt 2)
+[15:18:27] Refill: moving slot 16 (attempt 3)
+[15:18:29] Refill started on game thread=8336
+[15:18:29] Refill: moving slot 18 (attempt 1)
+[15:18:38] Refill started on game thread=8336
+[15:18:38] Refill: moving slot 19 (attempt 1)
+[15:18:47] Refill started on game thread=8336
+[15:18:47] Refill: moving slot 20 (attempt 1)
+[15:18:47] Refill: moving slot 21 (attempt 2)
+[15:18:47] Refill: moving slot 22 (attempt 3)
+[15:18:47] Refill: moving slot 23 (attempt 4)
+[15:18:53] Refill started on game thread=8336
+[15:18:53] Refill: moving slot 24 (attempt 1)
+[15:18:53] Refill: moving slot 25 (attempt 2)
+[15:19:02] Refill started on game thread=8336
+[15:19:02] Refill: moving slot 27 (attempt 1)
+[15:19:02] Refill: moving slot 28 (attempt 2)
+[15:19:02] Refill: moving slot 29 (attempt 3)
+[15:19:09] Refill started on game thread=8336
+[15:19:09] Refill: moving slot 30 (attempt 1)
+[15:19:09] Refill: moving slot 31 (attempt 2)
+[15:19:27] Refill started on game thread=8336
+[15:19:27] Refill: moving slot 32 (attempt 1)
+[15:19:27] Refill: moving slot 33 (attempt 2)
+[15:19:27] Refill: moving slot 34 (attempt 3)
+[15:21:26] Refill started on game thread=8336
+[15:21:26] Refill: moving slot 9 (attempt 1)
+[15:21:26] Refill: moving slot 10 (attempt 2)
+[15:21:37] Refill started on game thread=8336
+[15:21:37] Refill: moving slot 11 (attempt 1)
+[15:21:59] Refill started on game thread=8336
+[15:21:59] Refill: moving slot 12 (attempt 1)
+[15:21:59] Refill: moving slot 13 (attempt 2)
+[15:22:03] Refill started on game thread=8336
+[15:22:03] Refill: moving slot 14 (attempt 1)
+[15:22:11] Refill started on game thread=8336
+[15:22:12] Refill: moving slot 15 (attempt 1)
+[15:22:18] Refill started on game thread=8336
+[15:22:19] Refill: moving slot 16 (attempt 1)
+[15:22:23] Refill started on game thread=8336
+[15:22:23] Refill: moving slot 17 (attempt 1)
+[15:24:01] Refill started on game thread=8336
+[15:24:01] Refill: moving slot 9 (attempt 1)
+[15:24:01] Refill: moving slot 10 (attempt 2)
+[15:24:20] Refill started on game thread=8336
+[15:24:20] Refill: moving slot 11 (attempt 1)
+[15:24:20] Refill: moving slot 12 (attempt 2)
+[15:24:25] Refill started on game thread=8336
+[15:24:25] Refill: moving slot 13 (attempt 1)
+[15:24:34] Refill started on game thread=8336
+[15:24:34] Refill: moving slot 14 (attempt 1)
+[15:24:34] Refill: moving slot 15 (attempt 2)
+[15:24:58] Refill started on game thread=8336
+[15:24:58] Refill: moving slot 9 (attempt 1)
+[15:24:58] Refill: moving slot 10 (attempt 2)
+[15:25:16] Refill started on game thread=8336
+[15:25:16] Refill: moving slot 11 (attempt 1)
+[15:25:16] Refill: moving slot 12 (attempt 2)
+[15:25:16] Refill: moving slot 13 (attempt 3)
+[15:26:01] Refill started on game thread=8336
+[15:26:01] Refill: moving slot 9 (attempt 1)
+[15:26:01] Refill: moving slot 10 (attempt 2)
+[15:26:20] Refill started on game thread=8336
+[15:26:20] Refill: moving slot 11 (attempt 1)
+[15:26:20] Refill: moving slot 12 (attempt 2)
+[15:26:27] Refill started on game thread=8336
+[15:26:27] Refill: moving slot 13 (attempt 1)
+[15:26:33] Refill started on game thread=8336
+[15:26:33] Refill: moving slot 14 (attempt 1)
+[15:26:43] Refill started on game thread=8336
+[15:26:43] Refill: moving slot 15 (attempt 1)
+[15:27:11] Refill started on game thread=8336
+[15:27:11] Refill: moving slot 16 (attempt 1)
+[15:27:11] Refill: moving slot 18 (attempt 2)
+[15:27:18] Refill started on game thread=8336
+[15:27:18] Refill: moving slot 17 (attempt 1)
+[15:27:30] Refill started on game thread=8336
+[15:27:30] Refill: moving slot 19 (attempt 1)
+[15:27:58] Refill started on game thread=8336
+[15:27:58] Refill: moving slot 20 (attempt 1)
+[15:27:58] Refill: moving slot 21 (attempt 2)
+[15:27:58] Refill: moving slot 22 (attempt 3)
+[15:27:58] Refill: moving slot 23 (attempt 4)
+[15:27:58] Refill: moving slot 24 (attempt 5)
+[15:28:59] Refill started on game thread=8336
+[15:28:59] Refill: moving slot 9 (attempt 1)
+[15:28:59] Refill: moving slot 10 (attempt 2)
+[15:29:18] Refill started on game thread=8336
+[15:29:18] Refill: moving slot 11 (attempt 1)
+[15:29:18] Refill: moving slot 12 (attempt 2)
+[15:29:18] Refill: moving slot 13 (attempt 3)
+[15:29:26] Refill started on game thread=8336
+[15:29:26] Refill: moving slot 14 (attempt 1)
+[15:30:09] Refill started on game thread=8336
+[15:30:09] Refill: moving slot 9 (attempt 1)
+[15:30:09] Refill: moving slot 10 (attempt 2)
+[15:30:20] Refill started on game thread=8336
+[15:30:20] Refill: moving slot 11 (attempt 1)
+[15:30:20] Refill: moving slot 12 (attempt 2)
+[15:30:37] Refill started on game thread=8336
+[15:30:37] Refill: moving slot 13 (attempt 1)
+[15:30:37] Refill: moving slot 14 (attempt 2)
+[15:30:37] Refill: moving slot 15 (attempt 3)
+[15:30:46] Refill started on game thread=8336
+[15:30:46] Refill: moving slot 16 (attempt 1)
+[15:31:30] Refill started on game thread=8336
+[15:31:30] Refill: moving slot 9 (attempt 1)
+[15:31:30] Refill: moving slot 10 (attempt 2)
+[15:31:51] Refill started on game thread=8336
+[15:31:51] Refill: moving slot 11 (attempt 1)
+[15:31:51] Refill: moving slot 12 (attempt 2)
+[15:31:51] Refill: moving slot 13 (attempt 3)
+[15:31:56] Refill started on game thread=8336
+[15:31:56] Refill: moving slot 14 (attempt 1)
+[15:31:56] Refill: moving slot 15 (attempt 2)
+[15:32:06] Refill started on game thread=8336
+[15:32:06] Refill: moving slot 16 (attempt 1)
+[15:32:06] Refill: moving slot 18 (attempt 2)
+[15:32:08] Refill started on game thread=8336
+[15:32:08] Refill: moving slot 19 (attempt 1)
+[15:32:08] Refill: moving slot 20 (attempt 2)
+[15:32:14] Refill started on game thread=8336
+[15:32:14] Refill: moving slot 20 (attempt 1)
+[15:32:45] Refill started on game thread=8336
+[15:32:45] Refill: moving slot 9 (attempt 1)
+[15:32:45] Refill: moving slot 10 (attempt 2)
+[15:32:46] Refill started on game thread=8336
+[15:32:46] Refill: moving slot 11 (attempt 1)
+[15:32:53] Refill started on game thread=8336
+[15:32:53] Refill: moving slot 12 (attempt 1)
+[15:33:02] Refill started on game thread=8336
+[15:33:02] Refill: moving slot 13 (attempt 1)
+[15:33:02] Refill: moving slot 14 (attempt 2)
+[15:33:08] Refill started on game thread=8336
+[15:33:08] Refill: moving slot 15 (attempt 1)
+[15:33:22] Refill started on game thread=8336
+[15:33:22] Refill: moving slot 16 (attempt 1)
+[15:33:22] Refill: moving slot 18 (attempt 2)
+[15:33:22] Refill: moving slot 19 (attempt 3)
+[15:33:28] Refill started on game thread=8336
+[15:33:28] Refill: moving slot 20 (attempt 1)
+[15:33:28] Refill: moving slot 21 (attempt 2)
+[15:33:35] Refill started on game thread=8336
+[15:33:35] Refill: moving slot 22 (attempt 1)
+[15:33:35] Refill: moving slot 23 (attempt 2)
+[15:33:53] Refill started on game thread=8336
+[15:33:53] Refill: moving slot 17 (attempt 1)
+[15:33:53] Refill: moving slot 24 (attempt 2)
+[15:33:53] Refill: moving slot 25 (attempt 3)
+[15:34:01] Refill started on game thread=8336
+[15:34:01] Refill: moving slot 27 (attempt 1)
+[15:34:01] Refill: moving slot 28 (attempt 2)
+[15:34:09] Refill started on game thread=8336
+[15:34:09] Refill: moving slot 29 (attempt 1)
+[15:34:09] Refill: moving slot 30 (attempt 2)
+[15:34:09] Refill: moving slot 31 (attempt 3)
+[15:34:11] Refill started on game thread=8336
+[15:34:11] Refill: moving slot 32 (attempt 1)
+[15:34:23] Refill started on game thread=8336
+[15:34:23] Refill: moving slot 33 (attempt 1)
+[15:34:23] Refill: moving slot 34 (attempt 2)
+[15:37:13] Refill started on game thread=8336
+[15:37:13] Refill: moving slot 9 (attempt 1)
+[15:37:13] Refill: moving slot 10 (attempt 2)
+[15:37:40] Refill started on game thread=8336
+[15:37:40] Refill: moving slot 11 (attempt 1)
+[15:37:40] Refill: moving slot 12 (attempt 2)
+[15:37:40] Refill: moving slot 13 (attempt 3)
+[15:37:40] Refill: moving slot 14 (attempt 4)
+[15:42:45] Refill started on game thread=8336
+[15:42:45] Refill: moving slot 9 (attempt 1)
+[15:42:45] Refill: moving slot 10 (attempt 2)
+[15:43:03] Refill started on game thread=8336
+[15:43:03] Refill: moving slot 11 (attempt 1)
+[15:43:03] Refill: moving slot 12 (attempt 2)
+[15:43:30] Refill started on game thread=8336
+[15:43:30] Refill: moving slot 13 (attempt 1)
+[15:43:30] Refill: moving slot 14 (attempt 2)
+[15:43:30] Refill: moving slot 15 (attempt 3)
+[15:43:54] Refill started on game thread=8336
+[15:43:55] Refill: moving slot 9 (attempt 1)
+[15:43:55] Refill: moving slot 10 (attempt 2)
+[15:44:26] Refill started on game thread=8336
+[15:44:26] Refill: moving slot 11 (attempt 1)
+[15:44:26] Refill: moving slot 12 (attempt 2)
+[15:44:26] Refill: moving slot 13 (attempt 3)
+[15:45:46] Refill started on game thread=8336
+[15:45:47] Refill: moving slot 9 (attempt 1)
+[15:45:47] Refill: moving slot 10 (attempt 2)
+[15:46:32] Refill started on game thread=8336
+[15:46:32] Refill: moving slot 9 (attempt 1)
+[15:46:32] Refill: moving slot 10 (attempt 2)
+[15:46:47] Refill started on game thread=8336
+[15:46:47] Refill: moving slot 11 (attempt 1)
+[15:46:47] Refill: moving slot 12 (attempt 2)
+[15:46:47] Refill: moving slot 13 (attempt 3)

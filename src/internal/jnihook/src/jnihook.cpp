@@ -1,0 +1,1247 @@
+/*
+ *  -----------------------------------
+ * |         JNIHook - by rdbo         |
+ * |      Java VM Hooking Library      |
+ *  -----------------------------------
+ */
+
+/*
+ * Copyright (C) 2026    Rdbo
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License version 3
+ * as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#include <algorithm>
+#include <atomic>
+#include <jnihook.h>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <unordered_map>
+#include <string>
+#include <vector>
+#include <cstring>
+#include <jnif.hpp>
+#include "jvm.hpp"
+#include "uuid.hpp"
+#ifdef JNIHOOK_DEBUG
+        #define LOG(...) {strafeLog("[JNIHOOK] " __VA_ARGS__);fflush(stdout);}
+#else
+        #define LOG(...)
+#endif
+
+extern "C" JNIIMPORT VMStructEntry *gHotSpotVMStructs;
+extern "C" JNIIMPORT VMTypeEntry *gHotSpotVMTypes;
+
+using namespace jnif;
+
+typedef struct jnihook_t {
+        JavaVM   *jvm;
+        jvmtiEnv *jvmti;
+} jnihook_t;
+
+typedef struct method_info_t {
+        std::string name;
+        std::string signature;
+        jint access_flags = 0;
+} method_info_t;
+
+typedef struct hook_info_t {
+        method_info_t method_info;
+        void *native_hook_method = nullptr;
+        std::optional<size_t> bytecode_offset;
+} hook_info_t;
+
+enum class HookType {
+    Native,           // Native method hooking (default)
+    Init,             // Constructor (bytecode hooking + specific things)
+    ClInit,           // Static class initializer (bytecode hooking + specific things)
+    Bytecode, // Bytecode hooking
+};
+
+static std::unique_ptr<jnihook_t> g_jnihook = nullptr;
+static std::unordered_map<std::string, std::vector<hook_info_t>> g_hooks;
+static std::unordered_map<std::string, std::unique_ptr<ClassFile>> g_class_file_cache;
+static std::unordered_map<std::string, jclass> g_hook_classes;
+static std::unordered_map<std::string, std::vector<unsigned char>> g_original_bytes;
+extern "C" void swiftLog(const char*, ...);
+// static std::unordered_map<std::string, jclass> g_original_classes;
+static std::atomic<bool> g_force_class_caching = false;
+
+static std::string
+get_class_signature(jvmtiEnv *jvmti, jclass clazz)
+{
+        char *sig;
+        
+        if (jvmti->GetClassSignature(clazz, &sig, NULL) != JVMTI_ERROR_NONE) {
+                return "";
+        }
+
+        std::string signature = std::string(sig, &sig[strlen(sig)]);
+
+        jvmti->Deallocate(reinterpret_cast<unsigned char *>(sig));
+
+        return signature;
+}
+
+static std::string
+get_class_name(JNIEnv *env, jclass clazz)
+{
+        jclass klass = env->FindClass("java/lang/Class");
+        if (!klass)
+                return "";
+
+        jmethodID getName_method = env->GetMethodID(klass, "getName", "()Ljava/lang/String;");
+        if (!getName_method)
+                return "";
+
+        jstring name_obj = reinterpret_cast<jstring>(env->CallObjectMethod(clazz, getName_method));
+        if (!name_obj)
+                return "";
+
+        const char *c_name = env->GetStringUTFChars(name_obj, 0);
+        if (!c_name)
+                return "";
+
+        std::string name = std::string(c_name, &c_name[strlen(c_name)]);
+
+        env->ReleaseStringUTFChars(name_obj, c_name);
+
+        // Replace dots with slashes to match contents of ClassFile
+        for (size_t i = 0; i < name.length(); ++i) {
+                if (name[i] == '.')
+                        name[i] = '/';
+        }
+        
+        return name;
+}
+
+static std::unique_ptr<method_info_t>
+get_method_info(jvmtiEnv *jvmti, jmethodID method)
+{
+        char *name;
+        char *sig;
+        jint access_flags;
+        
+        if (jvmti->GetMethodName(method, &name, &sig, NULL) != JVMTI_ERROR_NONE)
+                return nullptr;
+
+        if (jvmti->GetMethodModifiers(method, &access_flags) != JVMTI_ERROR_NONE)
+                return nullptr;
+
+        std::string name_str(name, &name[strlen(name)]);
+        std::string signature_str(sig, &sig[strlen(sig)]);
+
+        jvmti->Deallocate(reinterpret_cast<unsigned char *>(name));
+        jvmti->Deallocate(reinterpret_cast<unsigned char *>(sig));
+
+        return std::make_unique<method_info_t>(method_info_t { name_str, signature_str, access_flags });
+}
+// generates name for new native method
+static std::string
+get_copy_method_name(const std::string &method_name, const std::string& class_name)
+{
+        static std::string uuid = GenerateUuid();
+        std::string clazz = class_name + "_";
+        std::replace(clazz.begin(), clazz.end(), '/', '_');
+        // init methods have additional "constructor" to not overlap possible method named init or clinit
+        if (method_name == "<init>") {
+            return "init_____jnihook_constructor_" + clazz + uuid;
+        }
+        else if (method_name == "<clinit>") {
+            return "clinit_____jnihook_constructor_" + clazz + uuid;
+        }
+        return method_name + "_____jnihook_" + clazz + uuid;
+}
+// generates name for new copy of original method
+static std::string
+get_copy_clone_name(const std::string& method_name, const std::string& class_name)
+{
+    static std::string uuid = GenerateUuid();
+    std::string clazz = class_name + "_";
+    std::replace(clazz.begin(), clazz.end(), '/', '_');
+    // init methods have additional "constructor" to not overlap possible method named init or clinit
+    if (method_name == "<init>") {
+        return "init_clone_____jnihook_constructor_" + clazz + uuid;
+    }
+    else if (method_name == "<clinit>") {
+        return "clinit_clone_____jnihook_constructor_" + clazz + uuid;
+    }
+    return method_name + "_clone_____jnihook_" + clazz + uuid;
+}
+
+static std::vector<ArgType> get_arg(const std::string& desc) {
+    std::vector<ArgType> types;
+    size_t cursor = 0;
+    size_t start = desc.find('(');
+    if (start == std::string::npos) {
+        return types;
+    }
+    size_t end = desc.find(')');
+    if (end == std::string::npos) {
+        return types;
+    }
+    std::string args = desc.substr(start + 1, end - start - 1);
+    while (cursor < args.size()) {
+        auto& c = args[cursor];
+        switch (c) {
+        case '[' :
+            cursor++;
+            break;
+        case 'Z':
+            types.push_back(ArgType::Boolean);
+            cursor++;
+            break;
+        case 'B':
+            types.push_back(ArgType::Byte);
+            cursor++;
+            break;
+        case 'C':
+            types.push_back(ArgType::Char);
+            cursor++;
+            break;
+        case 'S':
+            types.push_back(ArgType::Short);
+            cursor++;
+            break;
+        case 'I':
+            types.push_back(ArgType::Int);
+            cursor++;
+            break;
+        case 'J':
+            types.push_back(ArgType::Long);
+            cursor++;
+            break;
+        case 'F':
+            types.push_back(ArgType::Float);
+            cursor++;
+            break;
+        case 'D':
+            types.push_back(ArgType::Double);
+            cursor++;
+            break;
+        case 'L':
+        {
+            size_t semicolon = args.find(';', cursor);
+            cursor = semicolon+1;
+            types.push_back(ArgType::Object);
+            break;
+        }
+        default:
+            cursor++;
+        }
+    }
+    return types;
+}
+void JNICALL JNIHook_ClassFileLoadHook(jvmtiEnv *jvmti_env,
+                                       JNIEnv* jni_env,
+                                       jclass class_being_redefined,
+                                       jobject loader,
+                                       const char* name,
+                                       jobject protection_domain,
+                                       jint class_data_len,
+                                       const unsigned char* class_data,
+                                       jint* new_class_data_len,
+                                       unsigned char** new_class_data)
+{
+        if (!class_being_redefined || !class_data || class_data_len <= 0) return;
+        auto class_name = get_class_name(jni_env, class_being_redefined);
+
+        // Don't do anything for unhooked classes
+        // (unless g_force_class_caching is true)
+        if (class_name == "" || (g_hooks.find(class_name) == g_hooks.end() || g_hooks[class_name].size() == 0) && !g_force_class_caching)
+                return;
+
+        // Cache parsed ClassFile if it's not cached yet
+        if (g_class_file_cache.find(class_name) == g_class_file_cache.end()) {
+                auto cf = ClassFile::parse((u1 *)class_data, class_data_len);
+                if (!cf)
+                        return;
+
+#ifdef JNIHOOK_DEBUG
+                // Assert that parsed class is the same as original class
+                auto bytes = cf->toBytes();
+                auto len = static_cast<jint>(bytes.size());
+                bool check = true;
+                if (len != class_data_len) {
+                        LOG("WARN: The parsed classfile length is not the same as the original (expected: %d, found: %d)\n", class_data_len, len);
+                        check = false;
+                }
+                len = std::min({ len, class_data_len });
+                for (jint i = 0; i < len; ++i) {
+                        auto byte = bytes[i];
+                        auto expected = class_data[i];
+                        if (byte != expected) {
+                                LOG("WARN: Class file byte '%d' differs from original (expected: %d, found: %d)\n", i, byte, expected);
+                                check = false;
+                        }
+                }
+                LOG("Class file parse check: %s\n", check ? "OK" : "BAD");
+                // cf->dump("/tmp/ORIG.class");
+#endif
+                g_original_bytes[class_name] = std::vector<unsigned char>(class_data, class_data + class_data_len);
+                g_class_file_cache[class_name] = std::move(cf);
+        }
+
+        return;
+}
+
+// Patches up a class with the current hooks (if any)
+// and redefines it using JVMTI
+jnihook_result_t
+ReapplyClass(jclass clazz, std::string clazz_name)
+{
+        jvmtiClassDefinition class_definition;
+        jvmtiError err;
+        const auto cached = g_class_file_cache.find(clazz_name);
+        if (!clazz || cached == g_class_file_cache.end() || !cached->second) {
+                swiftLog("JNIHook: missing cached class: %s", clazz_name.c_str());
+                return JNIHOOK_ERR_CLASS_FILE_CACHE;
+        }
+        auto cf = cached->second->clone();
+
+        // Patch class file
+        // NOTE: The `methods` attribute only has the methods defined by the main class of this ClassFile
+        //       Method references are not included here
+        //       If the source file has more than one class, they are compiled as separate ClassFiles
+        for (auto &method : cf->methods) {
+                auto name = method.getName();
+                auto descriptor = method.getDesc();
+
+                // Check if the current method is a method that should be hooked
+                // TODO: Use hashmap for faster lookup
+                bool should_hook = false;
+                std::optional<size_t> bytecode_offset;
+                for (auto &hk_info : g_hooks[clazz_name]) {
+                        auto &minfo = hk_info.method_info;
+                        if (minfo.name == name && minfo.signature == descriptor) {
+                                should_hook = true;
+                                bytecode_offset = hk_info.bytecode_offset;
+                                break;
+                        }
+                }
+                if (!should_hook)
+                        continue;
+
+                HookType hookType = HookType::Native;
+                if (strcmp(name, "<init>") == 0) {
+                    hookType = HookType::Init;
+                }
+                else if (strcmp(name, "<clinit>") == 0) {
+                    hookType = HookType::ClInit;
+                }
+                else if (bytecode_offset) {
+                    hookType = HookType::Bytecode;
+                }
+                // New method
+                std::string newName = get_copy_method_name(name, cf->getThisClassName());
+                
+                u2 copyflags = Method::PRIVATE | Method::FINAL;
+                if (method.accessFlags & Method::STATIC) {
+                    copyflags |= Method::STATIC;
+                }
+
+                auto deleteLNT = [](CodeAttr* orig_ca) {
+                    // remove line number table
+                    for (size_t i = 0; i < orig_ca->attrs.size(); i++) {
+                        if (orig_ca->attrs.attrs[i]->kind == ATTR_LNT) {
+                            orig_ca->attrs.remove(i);
+                        }
+                    }
+                };
+                
+                auto deleteNextInsts = [](InstList::Iterator& iterator) {
+                    // from JNIF model.cpp InstList::~InstList()
+                    for (Inst* inst = iterator->next; inst != nullptr;) {
+                        Inst* next = inst->next;
+                        inst->~Inst();
+                        inst = next;
+                    }
+                    iterator->next = nullptr;
+                };
+
+                // constructor hook
+                if (hookType == HookType::Init or 
+                    hookType == HookType::ClInit) {
+
+                    std::string copyName = get_copy_clone_name(name, cf->getThisClassName());
+                    auto& copyMethod = cf->addMethod(copyName.c_str(), descriptor, copyflags);
+                    auto& nativeMethod = cf->addMethod(newName.c_str(), descriptor, copyflags);
+
+
+                    for (size_t i = 0; i < method.attrs.size(); ++i) {
+                        auto& attr = method.attrs[i];
+                        if (attr.kind == ATTR_CODE) {
+                            u2 code_nameindex = 0;
+                            // get index of "Code" from ConstPool
+                            for (ConstPool::Iterator it = attr.constPool->iterator(); it.hasNext(); it++) {
+                                ConstPool::Index i = *it;
+                                ConstPool::Tag tag = attr.constPool->getTag(i);
+                                if (tag == ConstPool::Tag::UTF8) {
+                                    std::string bytes = attr.constPool->getUtf8(i);
+                                    if (bytes == "Code") {
+                                        code_nameindex = i;
+                                    }
+                                }
+                            }
+
+                            CodeAttr* ca = cf->_arena.create<CodeAttr>(code_nameindex, cf.get());
+                            CodeAttr* orig_ca = ((CodeAttr*)&attr);
+                            InstList& instList = ca->instList;
+
+                            ca->maxStack = orig_ca->maxStack;
+                            ca->maxLocals = orig_ca->maxLocals;
+
+                            auto& orig_instList = orig_ca->instList;
+                            //copy constructor opcodes to copy method
+                            bool allow_copy = false;
+                            size_t varsize = 0;
+                            for (auto it = orig_instList.begin().operator++(); it != orig_instList.end(); it.operator++()) {
+                                if (allow_copy) {
+                                    instList.copy(*it);
+                                    continue;
+                                }
+                                if (it->isInvoke() or it->isInvokeDynamic() or it->isInvokeInterface()) {
+                                    allow_copy = true;
+                                }
+                                else {
+                                    varsize++;
+                                }
+                            }
+
+                            ca->codeLen = instList.size();
+                            ca->cfg = ((CodeAttr*)&attr)->cfg;
+                            copyMethod.attrs.add(ca);
+
+                            auto nativeMethodid = cf->addMethodRef(cf->thisClassIndex, newName.c_str(), descriptor);
+                            auto iterator = orig_instList.begin();
+                            if (hookType == HookType::Init) {
+                                //patch original <init>
+                                // skip empty begin and invoke
+                                iterator.operator++();//empty
+                                iterator.operator++();//invoke
+
+                                // +1 for each var
+                                for (int c = 0; c < varsize; c++) {
+                                    iterator.operator++();
+                                }
+
+                                auto arg = get_arg(descriptor);
+                                orig_instList.addZero(Opcode::aload_0,*iterator);
+                                orig_ca->maxStack = orig_ca->maxStack + arg.size();
+
+                                int VarIndex = 1;
+                                for (size_t i = 0; i < arg.size();i++) {
+                                    auto& type = arg[i];
+                                    int ZeroOp = i+1;
+
+                                    if (i < 3) {
+                                        VarIndex += 1;
+                                        switch (type) {
+                                        case ArgType::Short: case ArgType::Byte: case ArgType::Char: case ArgType::Boolean: case ArgType::Int:
+                                            ZeroOp = static_cast<int>(Opcode::iload_0) + ZeroOp;
+                                            orig_instList.addZero(static_cast<Opcode>(ZeroOp), *iterator);
+                                            break;
+                                        case ArgType::Float:
+                                            ZeroOp = static_cast<int>(Opcode::fload_0) + ZeroOp;
+                                            orig_instList.addZero(static_cast<Opcode>(ZeroOp), *iterator);
+                                            break;
+                                        case ArgType::Object:
+                                            ZeroOp = static_cast<int>(Opcode::aload_0) + ZeroOp;
+                                            orig_instList.addZero(static_cast<Opcode>(ZeroOp), *iterator);
+                                            break;
+                                        case ArgType::Double:
+                                            ZeroOp = static_cast<int>(Opcode::dload_0) + ZeroOp;
+                                            orig_instList.addZero(static_cast<Opcode>(ZeroOp), *iterator);
+                                            break;
+                                        case ArgType::Long:
+                                            ZeroOp = static_cast<int>(Opcode::lload_0) + ZeroOp;
+                                            orig_instList.addZero(static_cast<Opcode>(ZeroOp), *iterator);
+                                            break;
+                                        default:
+                                            return JNIHOOK_ERR_UNKNOWN;
+                                        }
+                                    }
+                                    else {
+                                        switch (type) {
+                                        case ArgType::Short: case ArgType::Byte: case ArgType::Char: case ArgType::Boolean: case ArgType::Int:
+                                            orig_instList.addVar(Opcode::iload, VarIndex, *iterator);
+                                            VarIndex += 1;
+                                            break;
+                                        case ArgType::Float:
+                                            orig_instList.addVar(Opcode::fload, VarIndex, *iterator);
+                                            VarIndex += 1;
+                                            break;
+                                        case ArgType::Object:
+                                            orig_instList.addVar(Opcode::aload, VarIndex, *iterator);
+                                            VarIndex += 1;
+                                            break;
+                                        case ArgType::Long:
+                                            orig_instList.addVar(Opcode::lload, VarIndex, *iterator);
+                                            VarIndex += 2;
+                                            break;
+                                        case ArgType::Double:
+                                            VarIndex += 2;
+                                            orig_instList.addVar(Opcode::dload, VarIndex, *iterator);
+                                            break;
+                                        default:
+                                            return JNIHOOK_ERR_UNKNOWN;
+                                        }
+                                    }
+                                }
+                                deleteNextInsts(iterator);
+                                orig_instList.addInvoke(Opcode::invokespecial, nativeMethodid, *iterator); // this.nativeMethod()
+                                orig_instList.addZero(Opcode::RETURN, *iterator);                         // return
+
+                                orig_ca->codeLen = orig_instList.size();
+                            }
+                            else if (hookType == HookType::ClInit) {
+                                //patch original <clinit>
+                                deleteNextInsts(iterator);
+                                orig_instList.addInvoke(Opcode::invokestatic, nativeMethodid, *iterator); // nativeMethod()
+                                orig_instList.addZero(Opcode::RETURN, *iterator);                        // return
+                            }
+                            deleteLNT(orig_ca);
+                        }
+                        else {
+                            copyMethod.attrs.add((Attr*)&attr);
+                            nativeMethod.attrs.add((Attr*)&attr);
+                        }
+                    }
+                    *(u2*)&nativeMethod.accessFlags |= Method::NATIVE;
+                }
+                // mid function hook
+                else if (hookType == HookType::Bytecode) {
+                    /*
+                        if midfunction hook
+                        make native method to store hook
+                        invoke native method at specified offset
+                        how offset works:
+                        1-beginning of function
+                        n-each instruction is +1
+                    */
+                    auto& nativeMethod = cf->addMethod(newName.c_str(), descriptor, copyflags);
+                    
+                    for (size_t i = 0; i < method.attrs.size(); ++i) {
+                        auto& attr = method.attrs[i];
+                        nativeMethod.attrs.add((Attr*)&attr); // native method should inherit all the attributes
+                        if (attr.kind == ATTR_CODE) {
+                            nativeMethod.attrs.remove(i);
+                            u2 code_nameindex = 0;
+                            // get index of "Code" from ConstPool
+                            for (ConstPool::Iterator it = attr.constPool->iterator(); it.hasNext(); it++) {
+                                ConstPool::Index i = *it;
+                                ConstPool::Tag tag = attr.constPool->getTag(i);
+                                if (tag == 1) {
+                                    std::string bytes = attr.constPool->getUtf8(i);
+                                    if (bytes == "Code") {
+                                        code_nameindex = i;
+                                    }
+                                }
+                            }
+
+                            CodeAttr* orig_ca = ((CodeAttr*)&attr);
+                            InstList& instList = orig_ca->instList;
+
+                            auto nativeMethodid = cf->addMethodRef(cf->thisClassIndex, newName.c_str(), descriptor);
+                            auto iterator = instList.begin();
+                            
+                            for (size_t i = 0; i < bytecode_offset.value(); i++) {
+                                if (iterator->next == nullptr) {
+                                    break;
+                                }
+                                iterator.operator++();
+                            }
+                            // instead of forcing all midhooks to be ()V increase max stack to prevent error defining
+                            // (returntype) (var) = this.nativeMethod();
+                            orig_ca->maxStack++;
+                            if (copyflags & Method::STATIC) {
+                                instList.addInvoke(Opcode::invokestatic, nativeMethodid, *iterator); // nativeMethod()
+                            }else {
+                                instList.addZero(Opcode::aload_0, *iterator);                          // this=this
+                                instList.addInvoke(Opcode::invokespecial, nativeMethodid, *iterator); // this.nativeMethod()
+                            }
+                            deleteLNT(orig_ca);
+                        }
+                    }
+
+                    *(u2*)&nativeMethod.accessFlags |= Method::NATIVE;
+                }
+                else {
+                    // default hook
+                    auto& newMethod = cf->addMethod(newName.c_str(), descriptor, copyflags);
+
+                    // Set method to native
+                    *(u2*)&method.accessFlags |= Method::NATIVE;
+
+                    // Remove "Code" attribute
+                    for (size_t i = 0; i < method.attrs.size(); ++i) {
+                        auto& attr = method.attrs[i];
+                        newMethod.attrs.add((Attr*)&attr); // native method should inherit all the attributes
+                                                          // from the original method
+                        if (attr.kind == ATTR_CODE) {
+                            method.attrs.remove(i);
+                            break;
+                        }
+                    }
+                }
+        }
+
+        // Redefine class with modified ClassFile
+        auto cf_bytes = cf->toBytes();
+
+        class_definition.klass = clazz;
+        class_definition.class_byte_count = cf_bytes.size();
+        class_definition.class_bytes = cf_bytes.data();
+        err = g_jnihook->jvmti->RedefineClasses(1, &class_definition);
+#ifdef JNIHOOK_DEBUG
+        std::stringstream ss;
+        LOG("===== CLASS REAPPLIED =====\n");
+        ss << *cf;
+        LOG("%s\n", ss.str().c_str());
+        LOG("===========================\n");
+#endif
+        if (err != JVMTI_ERROR_NONE) {
+                LOG("ERR: JVMTI error in ReapplyClass: %d\n", err);
+                // cf->dump("/tmp/DUMP.class");
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        return JNIHOOK_OK;
+}
+
+// Stores a loaded class in the class cache
+jnihook_result_t
+CacheClass(JNIEnv *env, jclass clazz)
+{
+        std::string clazz_name = get_class_name(env, clazz);
+
+        if (g_class_file_cache.find(clazz_name) == g_class_file_cache.end()) {
+                if (g_jnihook->jvmti->SetEventNotificationMode(JVMTI_ENABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL) != JVMTI_ERROR_NONE) {
+                        LOG("ERR: Failed to enable class file load hook\n");
+                        return JNIHOOK_ERR_SETUP_CLASS_FILE_LOAD_HOOK;
+                }
+
+                // Enable forceful caching of classfiles
+                // WARN: If something goes wrong, every class
+                // that goes through the ClassFileLoadHook
+                // would get cached! May waste a ton of memory.
+                g_force_class_caching = true;
+                auto result = g_jnihook->jvmti->RetransformClasses(1, &clazz);
+                g_force_class_caching = false;
+
+                // NOTE: We disable the ClassFileLoadHook here because it breaks
+                //       any `env->DefineClass()` calls. Also, it's not necessary
+                //       to keep it active at all times, we just have to use it for caching
+                //       classes that havent been cached yet.
+                // TODO: Investigate why it breaks it (possibly NullPointerException in
+                //       JNIHook_ClassFileLoadHook)
+                if (g_jnihook->jvmti->SetEventNotificationMode(JVMTI_DISABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL) != JVMTI_ERROR_NONE) {
+                        LOG("ERR: Failed to disable class file load hook\n");
+                        return JNIHOOK_ERR_SETUP_CLASS_FILE_LOAD_HOOK;
+                }
+
+                if (result != JVMTI_ERROR_NONE) {
+                        LOG("ERR: Failed to cache classfile (JVMTI error)\n");
+                        return JNIHOOK_ERR_CLASS_FILE_CACHE;
+                }
+
+                if (g_class_file_cache.find(clazz_name) == g_class_file_cache.end()) {
+                        LOG("ERR: Failed to cache classfile\n");
+                        return JNIHOOK_ERR_CLASS_FILE_CACHE;
+                }
+        }
+
+        return JNIHOOK_OK;
+}
+
+// Copy a class and its inner classes
+// (no longer used)
+/*
+jnihook_result_t
+CopyClass(JNIEnv *env, jclass clazz, const std::string &new_class_name, std::string nest_host="", std::string old_nest_host="")
+{
+        jnihook_result_t result;
+        auto clazz_name = get_class_name(env, clazz);
+        std::map<jclass, std::string> additional_classes_to_copy = {};
+        jobject class_loader;
+
+        LOG("Copying class '%s' to: %s\n", clazz_name.c_str(), new_class_name.c_str());
+
+        // Cache class being copied
+        result = CacheClass(env, clazz);
+        if (result != JNIHOOK_OK)
+                return result;
+
+        // Find inner classes
+        auto &cf = g_class_file_cache[clazz_name];
+        for (auto &attr : cf->attrs) {
+                if (attr->kind == jnif::model::ATTR_NESTMEMBERS) {
+                        auto nested_members_attr = (NestMembersAttr *)attr;
+
+                        for (auto &class_index : nested_members_attr->classes) {
+                                auto inner_name = std::string(nested_members_attr->constPool->getClassName(class_index));
+                                auto inner_clazz = env->FindClass(inner_name.c_str());
+
+                                result = CacheClass(env, inner_clazz);
+                                if (result != JNIHOOK_OK)
+                                        return result;
+
+                                // Add inner class for copy
+                                // WARN: Assumes that the inner class name
+                                //       starts with the original class name
+                                inner_name.replace(0, clazz_name.length(), new_class_name);
+                                additional_classes_to_copy.insert({ inner_clazz, inner_name });
+                        }
+
+                        // NestMembers can only happen once per class
+                        break;
+                }
+        }
+
+        // Make copy of the class
+        LOG("Generating copy class...\n");
+        if (g_original_classes.find(clazz_name) == g_original_classes.end()) {
+                jclass class_copy;
+                auto new_cf = cf->clone();
+
+                // Rename the copy class
+                new_cf->renameClass(new_class_name.c_str());
+
+                // Make all methods final (may help with CallNonvirtual)
+                // for (auto &method : new_cf->methods) {
+                //         if (method.isInit())
+                //                 continue;
+
+                //         const_cast<u2 &>(method.accessFlags) |= Method::FINAL;
+                // }
+
+                // Replace NestHost class if needed
+                if (nest_host.length() > 0) {
+                        for (auto &attr : new_cf->attrs) {
+                                if (attr->kind != jnif::model::ATTR_NESTHOST)
+                                        continue;
+
+                                auto nest_host_attr = (NestHostAttr *)attr;
+                                auto host_index = nest_host_attr->hostClassIndex;
+                                auto name_index = nest_host_attr->constPool->getClassNameIndex(host_index);
+                                nest_host_attr->constPool->replaceUtf8(name_index, nest_host.c_str());
+                        }
+                }
+
+                // Rename references of NestHost class
+                if (nest_host.length() > 0 && old_nest_host.length() > 0) {
+                        new_cf->renameClass(old_nest_host.c_str(), nest_host.c_str());
+                }
+
+#ifdef JNIHOOK_DEBUG
+                LOG("===== COPY CLASS DUMP =====\n");
+                std::stringstream ss;
+                ss << *new_cf;
+                LOG("%s\n", ss.str().c_str());
+                LOG("======================\n");
+#endif
+
+                std::vector<u1> class_data;
+                try {
+                        class_data = new_cf->toBytes();
+                } catch (const Exception &ex) {
+                        LOG("ERR: Failed to convert classfile to bytes: %s\n", ex.message.c_str());
+                        return JNIHOOK_ERR_CLASS_FILE_FORMAT;
+                } catch (...) {
+                        LOG("ERR: Failed to convert classfile to bytes\n");
+                        return JNIHOOK_ERR_CLASS_FILE_FORMAT;
+                }
+
+                if (g_jnihook->jvmti->GetClassLoader(clazz, &class_loader) != JVMTI_ERROR_NONE) {
+                        LOG("ERR: Failed to get class loader\n");
+                        return JNIHOOK_ERR_JVMTI_OPERATION;
+                }
+
+                class_copy = env->DefineClass(NULL, class_loader,
+                                              reinterpret_cast<const jbyte *>(class_data.data()),
+                                              class_data.size());
+
+                if (!class_copy) {
+                        LOG("ERR: Failed to define class\n");
+                        return JNIHOOK_ERR_JNI_OPERATION;
+                }
+
+                g_original_classes[clazz_name] = class_copy;
+        }
+
+        for (auto &[inner_clazz, inner_new_name] : additional_classes_to_copy) {
+                result = CopyClass(env, inner_clazz, inner_new_name, new_class_name, clazz_name);
+                if (result != JNIHOOK_OK) {
+                        LOG("ERR: Failed to copy inner class '%s' of class: %s\n", inner_new_name.c_str(), clazz_name.c_str());
+                        return result;
+                }
+        }
+
+        LOG("Class '%s' copied to '%s' successfully\n", clazz_name.c_str(), new_class_name.c_str());
+
+        return JNIHOOK_OK;
+}
+*/
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+JNIHook_Init(JavaVM *jvm)
+{
+        jvmtiEnv *jvmti;
+        jvmtiCapabilities capabilities = {};
+        jvmtiEventCallbacks callbacks = {};
+
+        if (jvm->GetEnv(reinterpret_cast<void **>(&jvmti), JVMTI_VERSION_1_2) != JNI_OK) {
+                LOG("ERR: Failed to get JVMTI");
+                return JNIHOOK_ERR_GET_JVMTI;
+        }
+
+        // JNIHook only needs class redefine/retransform for attaching method
+        // hooks. Requesting the "any class" and suspend capabilities makes
+        // AddCapabilities fail on several already-running Java 8 VMs (notably
+        // Lunar), which prevented the nametag hook from being installed at all.
+        // This matches the minimal capability set used by raid0's working
+        // renderName hook.
+        capabilities.can_redefine_classes = 1;
+        capabilities.can_retransform_classes = 1;
+        capabilities.can_suspend = 1;
+
+        if (jvmti->AddCapabilities(&capabilities) != JVMTI_ERROR_NONE) {
+                LOG("ERR: Failed to add capabilities");
+                return JNIHOOK_ERR_ADD_JVMTI_CAPS;
+        }
+
+        callbacks.ClassFileLoadHook = JNIHook_ClassFileLoadHook;
+        if (jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks)) != JVMTI_ERROR_NONE) {
+                LOG("ERR: Failed to setup class file load hook");
+                return JNIHOOK_ERR_SETUP_CLASS_FILE_LOAD_HOOK;
+        }
+
+        g_jnihook = std::make_unique<jnihook_t>(jnihook_t { jvm, jvmti });
+
+        // Generate VM type hashmaps
+        LOG("Address of gHotspotVMStructs: %p\n", gHotSpotVMStructs);
+        LOG("Address of gHotspotVMTypes: %p\n", gHotSpotVMTypes);
+        VMTypes::init(gHotSpotVMStructs, gHotSpotVMTypes);
+
+        // Force AllowRedefinitionToAddDeleteMethods
+        auto jvm_flag_type_result = VMType::from_static("JVMFlag");
+        if (!jvm_flag_type_result && !(jvm_flag_type_result = VMType::from_static("Flag"))) {
+                LOG("Failed to parse VMStructs\n");
+                return JNIHOOK_ERR_UNKNOWN;
+        }
+
+        LOG("VMStructs successfully parsed\n");
+        auto jvm_flag_type = jvm_flag_type_result.value();
+        auto jvm_flag_size = jvm_flag_type.size();
+        LOG("JVM Flag Type Size: %lu\n", jvm_flag_size);
+        auto flagsFieldResult = jvm_flag_type.get_field<void *>("flags");
+        if (!flagsFieldResult.has_value()) {
+                LOG("JVM flags field was not found\n");
+                return JNIHOOK_ERR_UNKNOWN;
+        }
+        auto flagsField = flagsFieldResult.value();
+        LOG("Flags field: %p\n", flagsField);
+        auto numFlagsFieldResult = jvm_flag_type.get_field<size_t>("numFlags");
+        if (!numFlagsFieldResult.has_value()) {
+                LOG("JVM numFlags field was not found\n");
+                return JNIHOOK_ERR_UNKNOWN;
+        }
+        auto numFlagsField = numFlagsFieldResult.value();
+        LOG("NumFlags field: %p\n", numFlagsField);
+        LOG("NumFlags: %llu\n", static_cast<unsigned long long>(*numFlagsField));
+
+        auto flags_buf = *(unsigned char **)flagsField; // flagTable
+        auto numFlags = *numFlagsField;
+        if (!flags_buf || jvm_flag_size == 0) {
+                LOG("JVM flag table is invalid\n");
+                return JNIHOOK_ERR_UNKNOWN;
+        }
+        for (size_t i = 0; i < numFlags; ++i) {
+                auto flag = VMType::from_instance(jvm_flag_type.get_type_name().c_str(), &flags_buf[i * jvm_flag_size]);
+                if (!flag.has_value())
+                        continue;
+                auto name_field = flag->get_field<void *>("_name");
+                if (!name_field.has_value())
+                        continue;
+                auto name_addr = name_field.value();
+                auto name = (char *)*name_addr;
+                if (!name)
+                        continue;
+                LOG("FLAG: %s\n", name);
+
+                if (strcmp(name, "AllowRedefinitionToAddDeleteMethods"))
+                        continue;
+
+                auto addr_field = flag->get_field<bool *>("_addr");
+                if (!addr_field.has_value())
+                        continue;
+                auto addr = *addr_field.value();
+                if (!addr)
+                        continue;
+                LOG("ADDR: %p\n", addr);
+
+                auto value = reinterpret_cast<bool *>(addr);
+                LOG("VALUE: %d\n", (int)*value);
+
+                *value = true;
+                LOG("NEW VALUE: %d\n", (int)*value);
+
+                break;
+        }
+
+        return JNIHOOK_OK;
+}
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+_JNIHook_Attach(jmethodID method, void *native_hook_method, jmethodID *original_method, std::optional<size_t> bytecode_offset)
+{
+        jclass clazz;
+        std::string clazz_name;
+        hook_info_t hook_info;
+        JNIEnv *env;
+        jnihook_result_t result;
+
+        HookType hookType = HookType::Native;
+
+        if (g_jnihook->jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_8)) {
+                LOG("ERR: Failed to get JNI\n");
+                return JNIHOOK_ERR_GET_JNI;
+        }
+
+        if (g_jnihook->jvmti->GetMethodDeclaringClass(method, &clazz) != JVMTI_ERROR_NONE) {
+                LOG("ERR: Failed to get declaring class of method\n");
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        clazz_name = get_class_name(env, clazz);
+        if (clazz_name.length() == 0) {
+                LOG("ERR: Failed to get class name\n");
+                return JNIHOOK_ERR_JNI_OPERATION;
+        }
+
+        const auto existing = g_hook_classes.find(clazz_name);
+        if (existing != g_hook_classes.end() && !env->IsSameObject(existing->second, clazz)) {
+                swiftLog("JNIHook: refusing ambiguous class loader for %s", clazz_name.c_str());
+                return JNIHOOK_ERR_JNI_OPERATION;
+        }
+        auto method_info = get_method_info(g_jnihook->jvmti, method);
+        if (!method_info) return JNIHOOK_ERR_JVMTI_OPERATION;
+        std::string native_name = method_info->name;
+        if (method_info->name == "<init>") {
+            hookType = HookType::Init;
+            native_name = get_copy_method_name(method_info->name, clazz_name);
+        }else if (method_info->name == "<clinit>") {
+            hookType = HookType::ClInit;
+            native_name = get_copy_method_name(method_info->name, clazz_name);
+        }
+        else if (bytecode_offset) {
+            hookType = HookType::Bytecode;
+            native_name = get_copy_method_name(method_info->name, clazz_name);
+        }
+
+
+        hook_info.method_info = *method_info;
+        hook_info.native_hook_method = native_hook_method;
+        hook_info.bytecode_offset = bytecode_offset;
+
+        // Force caching of the class being hooked
+        result = CacheClass(env, clazz);
+        if (result != JNIHOOK_OK)
+                return result;
+
+        // Retain restoration identity before modifying any bytecode, including
+        // failure paths where native registration or original lookup fails.
+        if (g_hook_classes.find(clazz_name) == g_hook_classes.end()) {
+                jclass retained = static_cast<jclass>(env->NewGlobalRef(clazz));
+                if (!retained) {
+                        if (env->ExceptionCheck()) env->ExceptionClear();
+                        return JNIHOOK_ERR_JNI_OPERATION;
+                }
+                g_hook_classes.emplace(clazz_name, retained);
+        }
+
+        // Suspend other threads while the hook is being set up
+        jthread curthread;
+        jthread *threads;
+        jint thread_count;
+
+        env->PushLocalFrame(16);
+
+        if (g_jnihook->jvmti->GetCurrentThread(&curthread) != JVMTI_ERROR_NONE) {
+                LOG("ERR: Failed to get current thread\n");
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        if (g_jnihook->jvmti->GetAllThreads(&thread_count, &threads) != JVMTI_ERROR_NONE) {
+                LOG("ERR: Failed to get all threads\n");
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        // Redefining a method while another Java thread is executing it can
+        // corrupt the interpreter return path. Track exactly which threads
+        // were suspended and abort the attach if an active thread cannot be
+        // stopped safely.
+        std::vector<jthread> suspended_threads;
+        jnihook_result_t ret = JNIHOOK_ERR_JNI_OPERATION;
+        for (jint i = 0; i < thread_count; ++i) {
+                if (env->IsSameObject(threads[i], curthread))
+                        continue;
+
+                const jvmtiError suspend_result =
+                        g_jnihook->jvmti->SuspendThread(threads[i]);
+                if (suspend_result == JVMTI_ERROR_NONE) {
+                        suspended_threads.push_back(threads[i]);
+                } else if (suspend_result != JVMTI_ERROR_THREAD_NOT_ALIVE) {
+                        LOG("ERR: Failed to suspend Java thread (%d)\n", (int)suspend_result);
+                        ret = JNIHOOK_ERR_JVMTI_OPERATION;
+                        goto RESUME_THREADS;
+                }
+        }
+
+        // Apply current hooks
+        g_hooks[clazz_name].push_back(hook_info);
+        if (ret = ReapplyClass(clazz, clazz_name); ret != JNIHOOK_OK) {
+                LOG("ERR: Failed to reapply class\n");
+                g_hooks[clazz_name].pop_back();
+                goto RESUME_THREADS;
+        }
+        
+        // Register native method for JVM lookup
+        JNINativeMethod native_method;
+        native_method.name = const_cast<char *>(native_name.c_str());
+        native_method.signature = const_cast<char *>(method_info->signature.c_str());
+        native_method.fnPtr = native_hook_method;
+
+        if (env->RegisterNatives(clazz, &native_method, 1) < 0) {
+            ret = JNIHOOK_ERR_JNI_OPERATION;
+            if (env->ExceptionCheck()) env->ExceptionClear();
+            swiftLog("JNIHook: RegisterNatives failed for %s", clazz_name.c_str());
+            g_hooks[clazz_name].pop_back();
+            ReapplyClass(clazz, clazz_name); // Attempt to restore class to previous state
+            goto RESUME_THREADS;
+        }
+
+RESUME_THREADS:
+        // Resume other threads, hook already placed succesfully
+        for (jthread thread : suspended_threads) {
+                g_jnihook->jvmti->ResumeThread(thread);
+        }
+
+        g_jnihook->jvmti->Deallocate(reinterpret_cast<unsigned char *>(threads));
+        env->PopLocalFrame(NULL);
+
+        if (ret != JNIHOOK_OK)
+                return ret;
+
+        // Get original method
+        ret = JNIHOOK_OK;
+        if (original_method) {
+                jclass orig_class = clazz;
+                jmethodID orig;
+                
+                std::string original_name; 
+                switch (hookType) {
+                case HookType::Init:
+                case HookType::ClInit:
+                    original_name = get_copy_clone_name(method_info->name, clazz_name);
+                    break;
+                case HookType::Bytecode:
+                    original_name = method_info->name;
+                    break;
+                case HookType::Native:
+                    original_name = get_copy_method_name(method_info->name, clazz_name);
+                    break;
+                }
+
+                if ((method_info->access_flags & Method::STATIC) == Method::STATIC) {
+                        orig = env->GetStaticMethodID(orig_class, original_name.c_str(),
+                                                      method_info->signature.c_str());
+                } else {
+                        orig = env->GetMethodID(orig_class, original_name.c_str(),
+                                                method_info->signature.c_str());
+                }
+
+                if (!orig || env->ExceptionOccurred()) {
+                        LOG("ERR: Exception while getting original method '%s -> %s'\n", original_name.c_str(), method_info->signature.c_str());
+                        env->ExceptionDescribe();
+                        env->ExceptionClear();
+                        ret = JNIHOOK_ERR_JAVA_EXCEPTION;
+                }
+
+                *original_method = orig;
+        }
+
+        if (ret != JNIHOOK_OK) {
+                g_hooks[clazz_name].pop_back();
+                const auto rollback = ReapplyClass(clazz, clazz_name);
+                swiftLog("JNIHook: original lookup failed for %s; rollback=%d",
+                    clazz_name.c_str(), static_cast<int>(rollback));
+                return ret;
+        }
+
+        return JNIHOOK_OK;
+}
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+JNIHook_Attach(jmethodID method, void *native_hook_method, jmethodID *original_method)
+{
+        try {
+                return _JNIHook_Attach(method, native_hook_method, original_method, std::nullopt);
+        }
+        catch (jnif::Exception ex) {
+                LOG("ERR: JNIF exception thrown -> %s\n", ex.message.c_str());
+                return JNIHOOK_ERR_CLASS_FILE_FORMAT;
+        }
+        catch (...) {
+                LOG("ERR: Unhandled exception thrown\n");
+        }
+        return JNIHOOK_ERR_UNKNOWN;
+}
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+JNIHook_BytecodeAttach(jmethodID method, void* native_hook_method, jmethodID *original_method, size_t offset)
+{
+        try {
+                return _JNIHook_Attach(method, native_hook_method, original_method, offset);
+        }
+        catch (jnif::Exception ex) {
+                LOG("ERR: JNIF exception thrown -> %s\n", ex.message.c_str());
+                return JNIHOOK_ERR_CLASS_FILE_FORMAT;
+        }
+        catch (...) {
+                LOG("ERR: Unhandled exception thrown\n");
+        }
+        return JNIHOOK_ERR_UNKNOWN;
+}
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+JNIHook_Detach(jmethodID method)
+{
+        JNIEnv *env;
+        jclass clazz;
+        std::string clazz_name;
+        hook_info_t hook_info;
+        jvmtiClassDefinition class_definition;
+
+        if (g_jnihook->jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_8)) {
+                return JNIHOOK_ERR_GET_JNI;
+        }
+
+        if (g_jnihook->jvmti->GetMethodDeclaringClass(method, &clazz) != JVMTI_ERROR_NONE) {
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        clazz_name = get_class_name(env, clazz);
+        if (clazz_name.length() == 0) {
+                return JNIHOOK_ERR_JNI_OPERATION;
+        }
+
+        if (g_hooks.find(clazz_name) == g_hooks.end() || g_hooks[clazz_name].size() == 0) {
+                return JNIHOOK_OK;
+        }
+
+        auto method_info = get_method_info(g_jnihook->jvmti, method);
+        if (!method_info) {
+                return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+
+        for (size_t i = 0; i < g_hooks[clazz_name].size();) {
+                const auto &registered = g_hooks[clazz_name][i];
+                if (registered.method_info.name == method_info->name &&
+                    registered.method_info.signature == method_info->signature)
+                        g_hooks[clazz_name].erase(g_hooks[clazz_name].begin() + i);
+                else
+                        ++i;
+        }
+        // RedefineClasses establishes its own JVM safepoint. Suspending every
+        // Java thread here can deadlock Lunar/Forge during unload.
+        jnihook_result_t result = ReapplyClass(clazz, clazz_name);
+        if (result == JNIHOOK_OK && g_hooks[clazz_name].empty()) {
+                g_hooks.erase(clazz_name);
+                g_class_file_cache.erase(clazz_name);
+                g_original_bytes.erase(clazz_name);
+                auto retained = g_hook_classes.find(clazz_name);
+                if (retained != g_hook_classes.end()) {
+                        if (retained->second) env->DeleteGlobalRef(retained->second);
+                        g_hook_classes.erase(retained);
+                }
+        }
+
+        return result;
+}
+
+
+JNIHOOK_API jnihook_result_t JNIHOOK_CALL
+JNIHook_Shutdown()
+{
+        JNIEnv *env;
+        jvmtiEventCallbacks callbacks = {};
+
+        if (!g_jnihook || !g_jnihook->jvm || !g_jnihook->jvmti) {
+                return JNIHOOK_OK;
+        }
+
+        if (g_jnihook->jvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_8)) {
+                return JNIHOOK_ERR_GET_JNI;
+        }
+
+        // Validate every restoration before changing any live class. Restore
+        // original bytes as one JVMTI transaction, not through the hook parser.
+        std::vector<jvmtiClassDefinition> definitions;
+        definitions.reserve(g_hook_classes.size());
+        for (const auto& [key, clazz] : g_hook_classes) {
+                const auto bytes = g_original_bytes.find(key);
+                jboolean modifiable = JNI_FALSE;
+                if (!clazz || bytes == g_original_bytes.end() || bytes->second.empty() ||
+                    g_jnihook->jvmti->IsModifiableClass(clazz, &modifiable) != JVMTI_ERROR_NONE ||
+                    !modifiable) {
+                        swiftLog("JNIHook: unload preflight failed for %s", key.c_str());
+                        return JNIHOOK_ERR_CLASS_FILE_CACHE;
+                }
+                definitions.push_back({clazz, static_cast<jint>(bytes->second.size()), bytes->second.data()});
+                swiftLog("JNIHook: restore prepared %s (%zu bytes)", key.c_str(), bytes->second.size());
+        }
+        if (!definitions.empty()) {
+                swiftLog("JNIHook: RedefineClasses BEGIN count=%zu", definitions.size());
+                const jvmtiError restored = g_jnihook->jvmti->RedefineClasses(
+                    static_cast<jint>(definitions.size()), definitions.data());
+                swiftLog("JNIHook: RedefineClasses END result=%d", static_cast<int>(restored));
+                if (restored != JVMTI_ERROR_NONE) return JNIHOOK_ERR_JVMTI_OPERATION;
+        }
+        const jnihook_result_t shutdown_result = JNIHOOK_OK;
+		for (auto &[key, clazz] : g_hook_classes) {
+			if (clazz) env->DeleteGlobalRef(clazz);
+		}
+		g_hook_classes.clear();
+		g_class_file_cache.clear();
+        g_original_bytes.clear();
+        g_hooks.clear();
+
+        // TODO: Fully cleanup defined classes in `g_original_classes` by deleting them from the JVM memory
+        //       (if possible without doing crazy hacks)
+        // NOTE: The above is no longer needed due to changing the hooking method.
+        // g_original_classes.clear();
+
+        g_jnihook->jvmti->SetEventNotificationMode(JVMTI_DISABLE, JVMTI_EVENT_CLASS_FILE_LOAD_HOOK, NULL);
+        g_jnihook->jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks));
+
+        jvmtiCapabilities caps{};
+		caps.can_redefine_classes = 1;
+		caps.can_retransform_classes = 1;
+		caps.can_suspend = 1;
+		jvmtiError err = g_jnihook->jvmti->RelinquishCapabilities(&caps);
+
+        g_jnihook = nullptr;
+
+        return shutdown_result;
+}

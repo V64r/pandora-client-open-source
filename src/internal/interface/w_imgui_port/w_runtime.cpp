@@ -1,0 +1,21 @@
+#include "includes.hh"
+
+// Authentic W framework runtime. Swift keeps its OpenGL/Win32 ImGui backend;
+// W owns the window, layout, controls, search, styling and animations.
+#include "render/fonts/fa.cc"
+#include "render/render.cc"
+#include "framework/gui/button/button.cc"
+#include "framework/gui/checkbox/checkbox.cc"
+#include "framework/gui/colorpicker/colorpicker.cc"
+#include "framework/gui/dropdown/dropdown.cc"
+#include "framework/gui/keybind/keybind.cc"
+#include "framework/gui/listbox/listbox.cc"
+#include "framework/gui/multibox/multibox.cc"
+#include "framework/gui/slider/slider.cc"
+#include "framework/gui/textinput/textinput.cc"
+#include "framework/gui/popup/popup.cc"
+#include "framework/gui/search/search.cc"
+#include "framework/gui/tab/tab.cc"
+#include "framework/gui/interactive_preview/interactive_preview.cc"
+#include "framework/gui/child/child.cc"
+#include "framework/gui/window/window.cc"

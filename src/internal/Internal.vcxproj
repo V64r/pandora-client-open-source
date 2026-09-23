@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{d799d312-700e-4073-bfd2-26eb3b067b2d}</ProjectGuid>
+    <RootNamespace>Internal</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <TargetName>Swift</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <TargetName>Swift</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <TargetName>Swift</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+    <TargetName>Swift</TargetName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <!-- ============================================ -->
+  <!-- DESHABILITAR VCPKG COMPLETAMENTE             -->
+  <!-- ============================================ -->
+  <PropertyGroup>
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <VcpkgCopyDependencies>false</VcpkgCopyDependencies>
+    <VcpkgAutoLink>false</VcpkgAutoLink>
+    <CopyLocalDependencies>false</CopyLocalDependencies>
+    <CopyLocalRuntimeDependencies>false</CopyLocalRuntimeDependencies>
+    <JavaHome Condition="'$(JAVA_HOME)' != ''">$(JAVA_HOME)</JavaHome>
+    <JavaHome Condition="'$(JavaHome)' == ''">C:\Program Files\Eclipse Adoptium\jdk-17.0.20.8-hotspot</JavaHome>
+  </PropertyGroup>
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(MSBuildProjectDirectory)\..\..\bin\</OutDir>
+    <IntDir>$(MSBuildProjectDirectory)\..\..\bin\trash\obj\$(ProjectName)\$(Configuration)\$(Platform)\</IntDir>
+    <TrackFileAccess>false</TrackFileAccess>
+    <EnableClServerMode>false</EnableClServerMode>
+    <UseMultiToolTask>false</UseMultiToolTask>
+    <MultiProcCL>false</MultiProcCL>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;Internal_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DisableSpecificWarnings>4305;4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;Internal_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DisableSpecificWarnings>4305;4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;Internal_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)lib\include;
+        $(ProjectDir)front\back\misc\minhook\include;
+        $(ProjectDir)front\back\misc\minhook\src;
+        $(ProjectDir)front\back\misc\minhook\src\hde;
+        $(ProjectDir)front\back\misc\imgui\backends;
+        $(ProjectDir)front\back\misc;
+        $(ProjectDir)front\back\misc\imgui;
+        $(ProjectDir)front\front;
+        $(ProjectDir)front\front\mapper;
+        $(ProjectDir)front\front\features;
+        $(JavaHome)\include\win32;
+        $(JavaHome)\include;
+        jnihook\include;
+        jnihook\src;
+        jnihook\external\jnif\src-libjnif;
+        jnihook\external\jnif\src-libjnif\zip;
+        $(ProjectDir)zlib
+      </AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ProgramDataBaseFileName>$(IntDir)Internal.pdb</ProgramDataBaseFileName>
+      <AdditionalOptions>/FS %(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4305;4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>
+        $(ProjectDir)lib\lib;
+        $(JavaHome)\lib
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        jvm.lib;
+        opengl32.lib;
+        freetype.lib;
+        libpng16.lib;
+        zs.lib;           
+        bz2.lib;            
+        brotlidec.lib;      
+        brotlicommon.lib;   
+        zstd.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;Internal_EXPORTS;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)lib\include;
+        $(ProjectDir)front\back\misc\minhook\include;
+        $(ProjectDir)front\back\misc\minhook\src;
+        $(ProjectDir)front\back\misc\minhook\src\hde;
+        $(ProjectDir)front\back\misc\imgui\backends;
+        $(ProjectDir)front\back\misc;
+        $(ProjectDir)front\back\misc\imgui;
+        $(ProjectDir)front\front;
+        $(ProjectDir)front\front\mapper;
+        $(ProjectDir)front\front\features;
+        $(JavaHome)\include\win32;
+        $(JavaHome)\include;
+        jnihook\include;
+        jnihook\src;
+        jnihook\external\jnif\src-libjnif;
+        jnihook\external\jnif\src-libjnif\zip;
+        $(ProjectDir)zlib
+      </AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <DisableSpecificWarnings>4305;4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>
+        $(ProjectDir)lib\lib;
+        $(JavaHome)\lib
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        jvm.lib;
+        opengl32.lib;
+        freetype.lib;
+        libpng16.lib;
+        zs.lib;            
+        bz2.lib;            
+        brotlidec.lib;      
+        brotlicommon.lib;  
+        zstd.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="interface\altmanager\alt_auth.hh" />
+    <ClInclude Include="front\back\misc\imgui\fonts\font_manager.h" />
+    <ClInclude Include="front\back\misc\imgui\misc\freetype\imgui_freetype.h" />
+    <ClInclude Include="front\back\misc\sdk.hpp" />
+    <ClInclude Include="front\front\features\features.hpp" />
+    <ClInclude Include="front\back\misc\imgui\backends\imconfig.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imgui.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imgui_internal.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imstb_rectpack.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imstb_textedit.h" />
+    <ClInclude Include="front\back\misc\imgui\backends\imstb_truetype.h" />
+    <ClInclude Include="front\back\misc\minhook\src\buffer.h" />
+    <ClInclude Include="front\back\misc\minhook\src\hde\hde32.h" />
+    <ClInclude Include="front\back\misc\minhook\src\hde\hde64.h" />
+    <ClInclude Include="front\back\misc\minhook\include\MinHook.h" />
+    <ClInclude Include="front\back\misc\minhook\src\hde\pstdint.h" />
+    <ClInclude Include="front\back\misc\minhook\src\hde\table32.h" />
+    <ClInclude Include="front\back\misc\minhook\src\hde\table64.h" />
+    <ClInclude Include="front\back\misc\minhook\src\trampoline.h" />
+    <ClInclude Include="front\front\helper\blur\gl_blur.hpp" />
+    <ClInclude Include="front\front\hooks\hooks.hpp" />
+    <ClInclude Include="front\front\mapper\mapper.hpp" />
+    <ClInclude Include="jnihook\include\jnihook.h" />
+    <ClInclude Include="pch.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="interface\altmanager\alt_auth.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\fonts\font_manager.cpp" />
+    <ClInclude Include="front\back\misc\imgui\fonts\Montserrat-SemiBold.h" />
+    <ClCompile Include="front\front\features\misc\ArmorSwitcher.cpp" />
+    <ClCompile Include="front\front\features\misc\Macros.cpp" />
+    <ClCompile Include="front\front\features\misc\Refill.cpp" />
+    <ClCompile Include="front\front\features\Movement\Sprint.cpp" />
+    <ClCompile Include="front\front\features\Movement\SnapTap.cpp" />
+    <ClCompile Include="front\front\features\Movement\InstantStop.cpp" />
+    <ClCompile Include="front\front\helper\nametag\hook_nametag.cpp" />
+    <ClCompile Include="interface\w_imgui_port\w_runtime.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;4834;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\sdk.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\AimAssist.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\AutoClick.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\BlockHit.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\misc\AutoArmor.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\NoHitDelay.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\Reach.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\combat\Velocity.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\features.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\misc\Friends.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui_draw.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui_impl_opengl3.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui_impl_win32.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui_tables.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\imgui_widgets.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\imgui\misc\freetype\imgui_freetype.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\minhook\src\buffer.c">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\minhook\src\hde\hde32.c">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\minhook\src\hde\hde64.c">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\minhook\src\hook.c">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\back\misc\minhook\src\trampoline.c">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\latency\Blink.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\misc\FastPlace.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\Movement\NoItemRelease.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\Movement\NoJumpDelay.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\Movement\NoSlow.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\Arraylist.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\Nametags.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\HitMarkers.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\outline.cpp" />
+    <ClCompile Include="front\front\features\visual\ESP.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\Tracers.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\features\visual\visual.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\hooks\clear\clear.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\hooks\hooks.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\hooks\send\send.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\hooks\swap_buffers\swap_buffers.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\gui_screen\gui_screen.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\item\item.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\item_stack\item_stack.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\mapper.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\minecraft\minecraft.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\moving_object_position\moving_object_position.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\player\player.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\render_manager\render_manager.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\settings\settings.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\timer\timer.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\vec3\vec3.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="front\front\mapper\world\world.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="Swift_main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <!-- ============================================ -->
+    <!-- JNIHOOK - SOLO LOS ARCHIVOS QUE EXISTEN      -->
+    <!-- ============================================ -->
+    <ClCompile Include="jnihook\src\jnihook.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\src\jvm.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\src\uuid.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\base.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\analysis.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\model.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\parser.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\printer.cpp">
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\stream.cpp">
+      <ObjectFileName>$(IntDir)jnif_stream.obj</ObjectFileName>
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <ClCompile Include="jnihook\external\jnif\src-libjnif\writer.cpp">
+      <ObjectFileName>$(IntDir)jnif_writer.obj</ObjectFileName>
+      <DisableSpecificWarnings>4267;4244;4200;4101;4097;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Unity-owned components: included once by Swift_main.cpp. -->
+    <None Include="interface\gui\gui.cpp" />
+    <None Include="userconfig\userconfig.cpp" />
+    <None Include="interface\altmanager\altmanager.cpp" />
+    <ClInclude Include="interface\gui\gui.h" />
+    <ClInclude Include="userconfig\userconfig.h" />
+    <ClInclude Include="interface\altmanager\altmanager.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+  <ItemGroup>
+    <ClCompile Include="front\front\features\misc\RightClicker.cpp" />
+    <ClCompile Include="front\front\features\misc\BridgeAssist.cpp" />
+    <ClCompile Include="front\front\features\combat\clicksounds\ClickSounds.cpp" />
+    <ClInclude Include="front\front\features\misc\InputSupport.hpp" />
+    <ClInclude Include="front\front\features\combat\clicksounds\ClickSounds.hpp" />
+    <ClInclude Include="front\front\features\combat\clicksounds\SoundData.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="front\front\features\movement\timerspeed.cpp" />
+    <ClCompile Include="front\front\features\movement\bunnyhop.cpp" />
+  </ItemGroup>
+  <ItemGroup><ClCompile Include="front\front\features\misc\BardHelper.cpp" /></ItemGroup>
+</Project>
